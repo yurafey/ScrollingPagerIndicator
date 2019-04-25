@@ -5,6 +5,7 @@ import android.graphics.Point;
 import android.os.Bundle;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.Display;
@@ -15,6 +16,9 @@ import android.widget.Toast;
 import ru.tinkoff.scrollingpagerindicator.ScrollingPagerIndicator;
 
 public class MainActivity extends AppCompatActivity {
+
+    private int currentSpan = 2;
+    private GridLayoutManager layoutManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,7 +38,8 @@ public class MainActivity extends AppCompatActivity {
         // Setup RecyclerView with indicator
         // One page will occupy 1/3 of screen width
         RecyclerView recyclerView = findViewById(R.id.recycler);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+        layoutManager = new GridLayoutManager(this, currentSpan, GridLayoutManager.HORIZONTAL, false);
+        recyclerView.setLayoutManager(layoutManager);
         DemoRecyclerViewAdapter recyclerAdapter = new DemoRecyclerViewAdapter(8, screenWidth);
         recyclerView.setAdapter(recyclerAdapter);
 
@@ -71,6 +76,12 @@ public class MainActivity extends AppCompatActivity {
             pagerAdapter.setCount(newVal);
             recyclerAdapter.setCount(newVal);
         });
+
+        NumberPicker spanCountPicker = findViewById(R.id.span_count_picker);
+        spanCountPicker.setMinValue(1);
+        spanCountPicker.setMaxValue(5);
+        spanCountPicker.setValue(currentSpan);
+        spanCountPicker.setOnValueChangedListener((picker, oldVal, newVal) -> layoutManager.setSpanCount(newVal));
     }
 
     private int getScreenWidth() {

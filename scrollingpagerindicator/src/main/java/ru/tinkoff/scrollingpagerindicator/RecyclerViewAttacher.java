@@ -2,6 +2,7 @@ package ru.tinkoff.scrollingpagerindicator;
 
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
@@ -78,7 +79,7 @@ public class RecyclerViewAttacher implements ScrollingPagerIndicator.PagerAttach
         dataObserver = new RecyclerView.AdapterDataObserver() {
             @Override
             public void onChanged() {
-                indicator.setDotCount(attachedAdapter.getItemCount());
+                updateDotCount(indicator);
                 updateCurrentOffset();
             }
 
@@ -108,7 +109,7 @@ public class RecyclerViewAttacher implements ScrollingPagerIndicator.PagerAttach
             }
         };
         attachedAdapter.registerAdapterDataObserver(dataObserver);
-        indicator.setDotCount(attachedAdapter.getItemCount());
+        updateDotCount(indicator);
         updateCurrentOffset();
 
         scrollListener = new RecyclerView.OnScrollListener() {
@@ -117,9 +118,9 @@ public class RecyclerViewAttacher implements ScrollingPagerIndicator.PagerAttach
                 if (newState == RecyclerView.SCROLL_STATE_IDLE && isInIdleState()) {
                     int newPosition = findCompletelyVisiblePosition();
                     if (newPosition != RecyclerView.NO_POSITION) {
-                        indicator.setDotCount(attachedAdapter.getItemCount());
+                        updateDotCount(indicator);
                         if (newPosition < attachedAdapter.getItemCount()) {
-                            indicator.setCurrentPosition(newPosition);
+                            indicator.setCurrentPosition(getRealDotPosition(newPosition));
                         }
                     }
                 }
@@ -127,11 +128,30 @@ public class RecyclerViewAttacher implements ScrollingPagerIndicator.PagerAttach
 
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                updateDotCount(indicator);
                 updateCurrentOffset();
             }
         };
 
         recyclerView.addOnScrollListener(scrollListener);
+    }
+
+    private int getRealDotPosition(int position) {
+        int spanCount = getSpanCount();
+        return (int) (((position + 1) / (float) spanCount + 0.5f) - 1);
+    }
+
+    private void updateDotCount(@NonNull ScrollingPagerIndicator indicator) {
+        int span = getSpanCount();
+        int itemsCount = attachedAdapter.getItemCount();
+        indicator.setDotCount((int) ((float) itemsCount / span + 0.5f));
+    }
+
+    private int getSpanCount() {
+        if (layoutManager instanceof GridLayoutManager) {
+            return ((GridLayoutManager) layoutManager).getSpanCount();
+        }
+        return 1;
     }
 
     @Override
@@ -161,7 +181,8 @@ public class RecyclerViewAttacher implements ScrollingPagerIndicator.PagerAttach
         final float offset = (getCurrentFrameLeft() - leftView.getX()) / leftView.getMeasuredWidth();
 
         if (offset >= 0 && offset <= 1 && position < itemCount) {
-            indicator.onPageScrolled(position, offset);
+            int dotPosition = getRealDotPosition(position);
+            indicator.onPageScrolled(dotPosition, offset);
         }
     }
 
